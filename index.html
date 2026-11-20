@@ -22,13 +22,16 @@ button small{display:block;font-size:.7rem;opacity:.8}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 16px;min-width:110px}
 .stat b{font-size:1.6rem;display:block;font-variant-numeric:tabular-nums}
 .stat span{color:var(--mut);font-size:.8rem}
-#text{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;font-size:2.1rem;line-height:2.1;min-height:120px;direction:rtl;unicode-bidi:plaintext;text-align:right}
+#text{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;font-size:2.1rem;line-height:2.1;min-height:120px;direction:rtl;unicode-bidi:plaintext;text-align:right}
 #text .c{color:var(--mut)}
 #text .d{color:var(--ok)}
 #text .x{color:var(--bad)}
-#text .cur{color:var(--acc);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px}
+#text .cur{color:var(--acc);text-decoration:none}
 #text .sp{display:inline-block;min-width:.45em}
-#text .sp.cur{background:color-mix(in srgb,var(--acc) 25%,transparent);border-radius:4px}
+#text .sp.cur{background:transparent}
+#caret{position:absolute;width:2.5px;border-radius:2px;background:var(--acc);pointer-events:none;display:none;animation:caretBlink 1s steps(1) infinite}
+@keyframes caretBlink{50%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#caret{animation:none}}
 #hint{color:var(--mut);min-height:1.5em}
 .kbwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
 #kb{direction:ltr;display:flex;flex-direction:column;gap:5px}
@@ -162,12 +165,12 @@ function record(ch, ok, lat){
   if (!ok){
     c.e++;
     c.s = 0;
-    c.errFlag = true; // دخل في مسار التصحيح باللون الأحمر
+    c.errFlag = true;
   } else {
     if (c.errFlag){
       c.s = Math.min(TARGET_STREAK, (c.s || 0) + 1);
       if (c.s >= TARGET_STREAK){
-        c.errFlag = false; // أتم 10 متتالية -> يختفي اللون ويعود من دون لون
+        c.errFlag = false;
         c.s = 0;
       }
     }
@@ -218,7 +221,6 @@ const stageProgress = i => {
   return f.length ? Math.round(100 * f.filter(mastered).length / f.length) : 0;
 };
 
-
 /* ---------- 5) توليد التمرين ---------- */
 const rnd = n => Math.floor(Math.random()*n);
 function pick(items, avoid){
@@ -236,7 +238,7 @@ function makeExercise(){
   while (len < 34){
     const wl = 2 + rnd(3), w = []; let prev = null;
     for (let i = 0; i < wl; i++){ const ch = pick(letters, prev); w.push(ch); prev = ch; }
-    if (marks.length && Math.random() < 0.55) w.splice(1 + rnd(w.length), 0, pick(marks)); // التشكيل بعد حرف
+    if (marks.length && Math.random() < 0.55) w.splice(1 + rnd(w.length), 0, pick(marks));
     if (puncts.length && Math.random() < 0.3) w.push(pick(puncts));
     words.push(w.join('')); len += Array.from(w.join('')).length + 1;
   }
@@ -298,22 +300,43 @@ function newExercise(){
   chars.forEach(ch => {
     const s = document.createElement('span'); s.textContent = ch === ' ' ? '\u00A0' : ch;
     s.className = 'c' + (ch === ' ' ? ' sp' : '');
-    if (MARK_RE.test(ch) && cluster) cluster.appendChild(s);      // الحركة تلتصق بحرفها
+    if (MARK_RE.test(ch) && cluster) cluster.appendChild(s);
     else { box.appendChild(s); cluster = s; if (ch === ' ') cluster = null; }
     spans.push(s);
   });
+  const caretEl = document.createElement('i');
+  caretEl.id = 'caret';
+  box.appendChild(caretEl);
   markNext(); renderWeak(); updateHeat();
+}
+function updateCaret(){
+  const caretEl = document.getElementById('caret');
+  if (!caretEl) return;
+  if (idx >= chars.length || !spans[idx]){
+    caretEl.style.display = 'none';
+    return;
+  }
+  const boxRect = document.getElementById('text').getBoundingClientRect();
+  const range = document.createRange();
+  range.selectNodeContents(spans[idx]);
+  const rects = range.getClientRects();
+  const r = rects.length ? rects[0] : spans[idx].getBoundingClientRect();
+  caretEl.style.display = 'block';
+  caretEl.style.top = (r.top - boxRect.top + r.height * 0.14) + 'px';
+  caretEl.style.height = (r.height * 0.72) + 'px';
+  caretEl.style.left = (r.left - boxRect.left - 2) + 'px';
 }
 function markNext(){
   nextEls.forEach(e => e.classList.remove('next')); nextEls = [];
   spans.forEach(s => s.classList.remove('cur'));
-  if (idx >= chars.length) return;
+  if (idx >= chars.length){ updateCaret(); return; }
   spans[idx].classList.add('cur');
+  updateCaret();
   const ch = chars[idx], m = charMap[ch]; if (!m) return;
   const def = keyDef[m.c]; nextEls.push(keyEls[m.c]);
   let t = 'التالي: ' + disp(ch) + ' ← ' + FINGER[def.f][0];
   if (m.shift){
-    const sc = def.f[0] === 'L' ? 'ShiftRight' : 'ShiftLeft';          // Shift بالإصبع المعاكس لليد
+    const sc = def.f[0] === 'L' ? 'ShiftRight' : 'ShiftLeft';
     nextEls.push(keyEls[sc]); t += ' + Shift (' + (sc === 'ShiftRight' ? 'يمين' : 'يسار') + ')';
   }
   nextEls.forEach(e => e.classList.add('next'));
@@ -332,7 +355,7 @@ document.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.code === 'Escape'){ newExercise(); return; }
   const el = keyEls[e.code]; if (!el) return;
-  e.preventDefault();                                // يمنع تمرير الصفحة بالمسافة وتنقل Tab
+  e.preventDefault();
   el.classList.add('down');
   if (e.repeat || !codeMap[e.code] || idx >= chars.length) return;
   const typed = e.shiftKey ? codeMap[e.code][1] : codeMap[e.code][0];
@@ -342,7 +365,7 @@ document.addEventListener('keydown', e => {
   if (!exStart) exStart = now;
   const dt = now - lastT; lastT = now;
   if (typed === expected){
-    record(expected, true, (!skipLat && dt < 2500) ? dt : null);   // زمن الاستجابة بين ضغطتين صحيحتين
+    record(expected, true, (!skipLat && dt < 2500) ? dt : null);
     skipLat = false; cor++;
     spans[idx].classList.remove('c'); spans[idx].classList.add('d');
     idx++; markNext();
@@ -357,9 +380,10 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => {
   const el = keyEls[e.code]; if (!el) return;
   el.classList.remove('down');
-  if (e.code === 'Space') e.preventDefault();       // لمنع تفعيل الأزرار بالمسافة
+  if (e.code === 'Space') e.preventDefault();
 });
 window.addEventListener('blur', () => Object.values(keyEls).forEach(el => el.classList.remove('down')));
+window.addEventListener('resize', () => { if (spans.length) updateCaret(); });
 
 function finishExercise(now){
   const mins = Math.max((now - exStart)/60000, 0.001);
