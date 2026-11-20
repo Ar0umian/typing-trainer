@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مدرّب الطباعة العربي (Mac)</title>
+<!-- ============ CSS ============ -->
+<style>
+:root{--bg:#efeee9;--fg:#1c1b19;--mut:#7a776f;--card:#fbfaf7;--key:#f4f3ef;--line:#cfccc3;--acc:#1f5fd6;--ok:#1a8f48;--bad:#d4382c;--hl:80%;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#171715;--fg:#efeee9;--mut:#9a978e;--card:#22221f;--key:#2d2d29;--line:#43423c;--acc:#6aa5ff;--ok:#4fd081;--bad:#ff7a6c;--hl:30%;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Geeza Pro","Noto Naskh Arabic","Segoe UI",system-ui,sans-serif;padding:16px;line-height:1.5}
+main{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{font-size:1.3rem;margin:0}
+.stages{display:flex;flex-wrap:wrap;gap:6px}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:focus-visible{outline:3px solid var(--acc)}
+button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+button small{display:block;font-size:.7rem;opacity:.8}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 16px;min-width:110px}
+.stat b{font-size:1.6rem;display:block;font-variant-numeric:tabular-nums}
+.stat span{color:var(--mut);font-size:.8rem}
+#text{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;font-size:2.1rem;line-height:2.1;min-height:120px;direction:rtl;unicode-bidi:plaintext;text-align:right}
+#text .c{color:var(--mut)}
+#text .d{color:var(--ok)}
+#text .x{color:var(--bad)}
+#text .cur{color:var(--acc);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px}
+#text .sp{display:inline-block;min-width:.45em}
+#text .sp.cur{background:color-mix(in srgb,var(--acc) 25%,transparent);border-radius:4px}
+#hint{color:var(--mut);min-height:1.5em}
+.kbwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+#kb{direction:ltr;display:flex;flex-direction:column;gap:5px}
+.row{display:flex;gap:5px}
+.key{flex:var(--w) 1 0;min-width:0;height:58px;border-radius:9px;background:var(--key);border:1px solid var(--line);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 1px 8px;font-size:12px}
+.key .s{font-size:12px;height:16px;line-height:16px;color:var(--mut)}
+.key .n{font-size:21px;line-height:1;font-weight:600}
+.key.lab{justify-content:flex-end;align-items:flex-start;padding:0 8px 8px;color:var(--mut)}
+.key::after{content:"";position:absolute;left:7px;right:7px;bottom:2px;height:3px;border-radius:2px;background:var(--fc,transparent)}
+.key.heat{background:hsl(var(--h) 62% var(--hl))}
+.key.next{outline:3px solid var(--acc);outline-offset:1px;animation:pulse 1s ease-in-out infinite}
+.key.down{transform:translateY(2px);filter:brightness(.92)}
+.key.bad{outline:3px solid var(--bad)}
+@keyframes pulse{50%{outline-color:transparent}}
+@media(prefers-reduced-motion:reduce){.key.next{animation:none}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--mut);font-size:.8rem;margin-top:10px;align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-left:5px;border:1px solid var(--line)}
+.fing{display:flex;gap:10px;flex-wrap:wrap}
+.fing span::before{content:"";display:inline-block;width:12px;height:4px;border-radius:2px;background:var(--fc);margin-left:5px;vertical-align:middle}
+#weak{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:.85rem}
+.chip b{font-size:1.3rem;margin-left:6px}
+h2{font-size:1rem;margin:4px 0}
+@media(max-width:700px){#text{font-size:1.5rem}.key{height:44px}.key .n{font-size:15px}.key .s{font-size:9px}.key.lab{font-size:8px;padding:0 3px 6px}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>مدرّب الطباعة العربي — تخطيط Mac</h1>
+    <div style="display:flex;gap:8px"><button id="btnNew">تمرين جديد (Esc)</button><button id="btnReset">مسح بياناتي</button></div>
+  </header>
+  <div class="stages" id="stages"></div>
+  <div class="stats">
+    <div class="stat"><b id="wpm">0</b><span>كلمة/دقيقة (WPM)</span></div>
+    <div class="stat"><b id="acc">100%</b><span>الدقة</span></div>
+    <div class="stat"><b id="avg">—</b><span>متوسط سرعتي (مللي ثانية)</span></div>
+    <div class="stat"><b id="cnt">0</b><span>تمارين مكتملة</span></div>
+  </div>
+  <div id="text" aria-live="off"></div>
+  <div id="hint"></div>
+  <div class="kbwrap">
+    <div id="kb"></div>
+    <div class="legend">
+      <span><i style="background:hsl(120 62% 55%)"></i>متقَن</span>
+      <span><i style="background:hsl(60 62% 55%)"></i>متوسط</span>
+      <span><i style="background:hsl(0 62% 55%)"></i>ضعيف</span>
+      <span><i style="background:var(--key)"></i>لم يُقَس بعد</span>
+      <span class="fing" id="fingLegend"></span>
+    </div>
+  </div>
+  <section><h2>أضعف الحروف الآن</h2><div id="weak"></div></section>
+</main>
+
+<!-- ============ JS ============ -->
+<script>
+"use strict";
+
+/* ---------- 1) تخطيط Apple Arabic (Mac) كما في الصورة ----------
+   كل مفتاح: c = KeyboardEvent.code ، n = بدون Shift ، s = مع Shift ، f = الإصبع ، w = العرض النسبي
+   (إن وجدت اختلافاً في مفتاح ما عدّله هنا فقط؛ كل شيء آخر يُبنى من هذا الجدول) */
+const D = {fa:'\u064E', fat:'\u064B', ka:'\u0650', kat:'\u064D', da:'\u064F', dat:'\u064C', su:'\u0652', sh:'\u0651'};
+const k  = (c,n,s,f,w=1) => ({c,n,s,f,w});
+const sp = (c,lab,w,f='') => ({c,lab,w,f});
+const ROWS = [
+  [k('Backquote','-','','LP'),k('Digit1','١','!','LP'),k('Digit2','٢','٭','LR'),k('Digit3','٣','#','LM'),
+   k('Digit4','٤','$','LI'),k('Digit5','٥','٪','LI'),k('Digit6','٦','^','RI'),k('Digit7','٧','&','RI'),
+   k('Digit8','٨','*','RM'),k('Digit9','٩',')','RR'),k('Digit0','٠','(','RP'),k('Minus','-','-','RP'),
+   k('Equal','=','+','RP'),sp('Backspace','backspace',1.9,'RP')],
+  [sp('Tab','tab',1.6,'LP'),k('KeyQ','ض',D.fa,'LP'),k('KeyW','ص',D.fat,'LR'),k('KeyE','ث',D.ka,'LM'),
+   k('KeyR','ق',D.kat,'LI'),k('KeyT','ف',D.da,'LI'),k('KeyY','غ',D.dat,'RI'),k('KeyU','ع',D.su,'RI'),
+   k('KeyI','ه',D.sh,'RM'),k('KeyO','خ',']','RR'),k('KeyP','ح','[','RP'),k('BracketLeft','ج','}','RP'),
+   k('BracketRight','ة','{','RP'),k('Backslash','\\','|','RP',1.3)],
+  [sp('CapsLock','caps lock',1.9,'LP'),k('KeyA','ش','«','LP'),k('KeyS','س','»','LR'),k('KeyD','ي','ى','LM'),
+   k('KeyF','ب','','LI'),k('KeyG','ل','','LI'),k('KeyH','ا','آ','RI'),k('KeyJ','ت','','RI'),
+   k('KeyK','ن','','RM'),k('KeyL','م','','RR'),k('Semicolon','ك',':','RP'),k('Quote','؛','"','RP'),
+   sp('Enter','enter',2,'RP')],
+  [sp('ShiftLeft','shift',2.4,'LP'),k('KeyZ','ظ',"'",'LP'),k('KeyX','ط','','LR'),k('KeyC','ذ','ئ','LM'),
+   k('KeyV','د','ء','LI'),k('KeyB','ز','أ','LI'),k('KeyN','ر','إ','RI'),k('KeyM','و','ؤ','RI'),
+   k('Comma','،','>','RM'),k('Period','.','<','RR'),k('Slash','/','؟','RP'),sp('ShiftRight','shift',2.5,'RP')],
+  [sp('ControlLeft','control',1.8),sp('AltLeft','option',1.6),k('Space',' ','','TH',7.9),
+   sp('AltRight','option',1.6),sp('MetaRight','',2)]
+];
+const FINGER = {LP:['خنصر اليسرى','#e5484d'],LR:['بنصر اليسرى','#f5a524'],LM:['وسطى اليسرى','#d4c21a'],
+  LI:['سبابة اليسرى','#3fb950'],TH:['الإبهام','#8b949e'],RI:['سبابة اليمنى','#2aa7c9'],
+  RM:['وسطى اليمنى','#4c7bf0'],RR:['بنصر اليمنى','#8a5cf0'],RP:['خنصر اليمنى','#d946a8']};
+
+/* جداول البحث: الحرف -> المفتاح ، والمفتاح -> الحرفان */
+const charMap = {}, codeMap = {}, keyDef = {}, keyEls = {};
+ROWS.flat().forEach(key => {
+  keyDef[key.c] = key;
+  if (key.n === undefined) return;
+  codeMap[key.c] = [key.n, key.s];
+  if (key.n && !charMap[key.n]) charMap[key.n] = {c:key.c, shift:false};
+  if (key.s && !charMap[key.s]) charMap[key.s] = {c:key.c, shift:true};
+});
+const MARK_RE = /[\u064B-\u0652]/;
+const disp = ch => MARK_RE.test(ch) ? '\u25CC' + ch : (ch === ' ' ? 'مسافة' : ch);
+
+/* ---------- 2) المراحل ---------- */
+const A = s => Array.from(s);
+const LET = A('شسيبلاتنمكضصثقفغعهخحجةظطذدزروأإآؤئءى');
+const MARKS = Object.values(D);
+const PUNCT = A('،؛؟.«»');
+const STAGES = [
+  {name:'صف الارتكاز',       L:A('شسيبلاتنمك'), C:[], M:[], P:[]},
+  {name:'الصف العلوي',       L:A('ضصثقفغعهخحجة'), C:A('شسيبلاتنمك'), M:[], P:[]},
+  {name:'الصف السفلي',       L:A('ظطذدزرو'), C:A('شسيبلاتنمكضصثقفغعهخحجة'), M:[], P:[]},
+  {name:'الهمزات والمتشابهة', L:A('أإآؤئءى'), C:A('ايهةو'), M:[], P:[]},
+  {name:'التشكيل والترقيم',  L:[], C:LET, M:MARKS, P:PUNCT},
+  {name:'الوضع التكيفي',     L:LET, C:[], M:MARKS, P:PUNCT}
+];
+const focusOf = st => [...st.L, ...st.M, ...st.P];
+const TRACKED = new Set([...LET, ...MARKS, ...PUNCT]);
+
+/* ---------- 3) التخزين المحلي ---------- */
+const KEY = 'ar_mac_typing_v1';
+let S = {chars:{}, stage:0, hist:[]};
+try { const r = localStorage.getItem(KEY); if (r) S = Object.assign(S, JSON.parse(r)); } catch(e){}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} };
+
+/* ---------- 4) إحصاءات الحروف والأوزان ----------
+   n: المحاولات ، e: الأخطاء ، nl: قياسات الزمن ، lat: متوسط الزمن
+   s: السلسلة المتتالية الصحيحة (0..10) ، errFlag: هل الحرف حالياً في دورة تصحيح بعد خطأ */
+const TARGET_STREAK = 10;
+const cs = ch => S.chars[ch] || (S.chars[ch] = {n:0, e:0, nl:0, lat:0, s:0, errFlag:false});
+
+function record(ch, ok, lat){
+  const c = cs(ch);
+  c.n++;
+  if (!ok){
+    c.e++;
+    c.s = 0;
+    c.errFlag = true; // دخل في مسار التصحيح باللون الأحمر
+  } else {
+    if (c.errFlag){
+      c.s = Math.min(TARGET_STREAK, (c.s || 0) + 1);
+      if (c.s >= TARGET_STREAK){
+        c.errFlag = false; // أتم 10 متتالية -> يختفي اللون ويعود من دون لون
+        c.s = 0;
+      }
+    }
+    if (lat != null){
+      c.nl++;
+      c.lat = c.nl === 1 ? lat : c.lat * 0.8 + lat * 0.2;
+    }
+  }
+}
+
+function meanLat(){
+  let t = 0, m = 0;
+  for (const ch in S.chars){
+    const c = S.chars[ch];
+    if (c.nl >= 3 && TRACKED.has(ch)){ t += c.lat; m++; }
+  }
+  return m ? t/m : 650;
+}
+
+/* يعيد قيمة 0..1 للتدرج من الأحمر (0) إلى الأخضر (1)، أو null إذا لم يكن في دورة تصحيح */
+function heatRatio(ch){
+  const c = S.chars[ch];
+  if (!c || !c.errFlag) return null;
+  return Math.max(0, Math.min(1, (c.s || 0) / TARGET_STREAK));
+}
+
+function weak(ch){
+  const c = S.chars[ch];
+  if (!c) return null;
+  if (c.errFlag) return 1 - heatRatio(ch);
+  return 0;
+}
+
+function mastered(ch){
+  const c = S.chars[ch];
+  return !!c && c.n > 0 && !c.errFlag;
+}
+
+function weight(ch){
+  const c = S.chars[ch];
+  if (!c || c.n === 0) return 1.5;
+  if (c.errFlag) return 1.2 + 2.5 * (1 - heatRatio(ch));
+  return 0.25;
+}
+
+const stageProgress = i => {
+  const f = focusOf(STAGES[i]);
+  return f.length ? Math.round(100 * f.filter(mastered).length / f.length) : 0;
+};
+
+
+/* ---------- 5) توليد التمرين ---------- */
+const rnd = n => Math.floor(Math.random()*n);
+function pick(items, avoid){
+  let list = items.filter(i => i[0] !== avoid); if (!list.length) list = items;
+  let t = list.reduce((a,i) => a + i[1], 0), r = Math.random()*t;
+  for (const i of list){ r -= i[1]; if (r <= 0) return i[0]; }
+  return list[list.length-1][0];
+}
+function makeExercise(){
+  const st = STAGES[S.stage];
+  const letters = [...st.L.map(c => [c, weight(c)]), ...st.C.map(c => [c, weight(c)*0.25])];
+  const marks = st.M.map(c => [c, weight(c)]);
+  const puncts = st.P.map(c => [c, weight(c)]);
+  const words = []; let len = 0;
+  while (len < 34){
+    const wl = 2 + rnd(3), w = []; let prev = null;
+    for (let i = 0; i < wl; i++){ const ch = pick(letters, prev); w.push(ch); prev = ch; }
+    if (marks.length && Math.random() < 0.55) w.splice(1 + rnd(w.length), 0, pick(marks)); // التشكيل بعد حرف
+    if (puncts.length && Math.random() < 0.3) w.push(pick(puncts));
+    words.push(w.join('')); len += Array.from(w.join('')).length + 1;
+  }
+  return words.join(' ');
+}
+
+/* ---------- 6) واجهة المفاتيح والخريطة الحرارية ---------- */
+function buildKeyboard(){
+  const kb = document.getElementById('kb');
+  ROWS.forEach(row => {
+    const r = document.createElement('div'); r.className = 'row';
+    row.forEach(key => {
+      const el = document.createElement('div'); el.className = 'key'; el.style.setProperty('--w', key.w);
+      if (key.f) el.style.setProperty('--fc', FINGER[key.f][1]);
+      if (key.n === undefined || key.c === 'Space'){ el.classList.add('lab'); el.textContent = key.lab || (key.c === 'Space' ? 'space' : ''); }
+      else el.innerHTML = '<div class="s">' + (key.s ? disp(key.s) : '') + '</div><div class="n">' + key.n + '</div>';
+      r.appendChild(el); keyEls[key.c] = el;
+    });
+    kb.appendChild(r);
+  });
+  document.getElementById('fingLegend').innerHTML = Object.values(FINGER).map(f => '<span style="--fc:' + f[1] + '">' + f[0] + '</span>').join('');
+}
+function updateHeat(){
+  ROWS.flat().forEach(key => {
+    const el = keyEls[key.c]; if (key.n === undefined) return;
+    const ws = [key.n, key.s].filter(ch => ch && TRACKED.has(ch)).map(weak).filter(w => w !== null);
+    if (!ws.length){ el.classList.remove('heat'); el.title = ''; return; }
+    const w = Math.max(...ws);
+    el.style.setProperty('--h', Math.round(120*(1 - Math.min(1, w*1.4))));
+    el.classList.add('heat');
+    el.title = [key.n, key.s].filter(ch => S.chars[ch]).map(ch => { const c = S.chars[ch]; return ch + ': خطأ ' + Math.round(100*c.e/c.n) + '٪ ، ' + Math.round(c.lat) + 'ms'; }).join(' | ');
+  });
+}
+function renderStages(){
+  const box = document.getElementById('stages'); box.innerHTML = '';
+  STAGES.forEach((st, i) => {
+    const b = document.createElement('button'); b.className = i === S.stage ? 'on' : '';
+    b.innerHTML = (i+1) + '. ' + st.name + '<small>إتقان ' + stageProgress(i) + '%</small>';
+    b.onclick = () => { S.stage = i; save(); resetSession(); renderStages(); newExercise(); b.blur(); };
+    box.appendChild(b);
+  });
+}
+function renderWeak(){
+  const list = [...TRACKED].map(ch => [ch, weak(ch)]).filter(x => x[1] !== null).sort((a,b) => b[1]-a[1]).slice(0, 6);
+  document.getElementById('weak').innerHTML = list.length ? list.map(([ch]) => {
+    const c = S.chars[ch]; return '<div class="chip"><b>' + disp(ch) + '</b>خطأ ' + Math.round(100*c.e/c.n) + '٪ · ' + Math.round(c.lat) + ' ms</div>';
+  }).join('') : '<span class="chip">ابدأ الكتابة لتظهر هنا الحروف التي تحتاج تدريباً.</span>';
+  document.getElementById('avg').textContent = Math.round(meanLat());
+}
+
+/* ---------- 7) حالة التمرين والجلسة ---------- */
+let chars = [], idx = 0, spans = [], lastT = 0, skipLat = true, exStart = 0, nextEls = [];
+let cor = 0, wr = 0, actMs = 0, started = false;
+function resetSession(){ cor = 0; wr = 0; actMs = 0; started = false; updateStats(); }
+function newExercise(){
+  chars = Array.from(makeExercise()); idx = 0; skipLat = true; exStart = 0;
+  const box = document.getElementById('text'); box.innerHTML = ''; spans = [];
+  let cluster = null;
+  chars.forEach(ch => {
+    const s = document.createElement('span'); s.textContent = ch === ' ' ? '\u00A0' : ch;
+    s.className = 'c' + (ch === ' ' ? ' sp' : '');
+    if (MARK_RE.test(ch) && cluster) cluster.appendChild(s);      // الحركة تلتصق بحرفها
+    else { box.appendChild(s); cluster = s; if (ch === ' ') cluster = null; }
+    spans.push(s);
+  });
+  markNext(); renderWeak(); updateHeat();
+}
+function markNext(){
+  nextEls.forEach(e => e.classList.remove('next')); nextEls = [];
+  spans.forEach(s => s.classList.remove('cur'));
+  if (idx >= chars.length) return;
+  spans[idx].classList.add('cur');
+  const ch = chars[idx], m = charMap[ch]; if (!m) return;
+  const def = keyDef[m.c]; nextEls.push(keyEls[m.c]);
+  let t = 'التالي: ' + disp(ch) + ' ← ' + FINGER[def.f][0];
+  if (m.shift){
+    const sc = def.f[0] === 'L' ? 'ShiftRight' : 'ShiftLeft';          // Shift بالإصبع المعاكس لليد
+    nextEls.push(keyEls[sc]); t += ' + Shift (' + (sc === 'ShiftRight' ? 'يمين' : 'يسار') + ')';
+  }
+  nextEls.forEach(e => e.classList.add('next'));
+  document.getElementById('hint').textContent = t;
+}
+function updateStats(){
+  const tot = cor + wr;
+  document.getElementById('acc').textContent = (tot ? Math.round(100*cor/tot) : 100) + '%';
+  document.getElementById('wpm').textContent = actMs > 1000 ? Math.round((cor/5)/(actMs/60000)) : 0;
+  document.getElementById('cnt').textContent = S.hist.length;
+}
+function flash(el, cls){ if (!el) return; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 160); }
+
+/* ---------- 8) التقاط المفاتيح (event.code مستقل عن لغة نظام الإدخال) ---------- */
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.code === 'Escape'){ newExercise(); return; }
+  const el = keyEls[e.code]; if (!el) return;
+  e.preventDefault();                                // يمنع تمرير الصفحة بالمسافة وتنقل Tab
+  el.classList.add('down');
+  if (e.repeat || !codeMap[e.code] || idx >= chars.length) return;
+  const typed = e.shiftKey ? codeMap[e.code][1] : codeMap[e.code][0];
+  const now = performance.now(), expected = chars[idx];
+  if (!started){ started = true; lastT = now; }
+  actMs += Math.min(now - lastT, 3000);
+  if (!exStart) exStart = now;
+  const dt = now - lastT; lastT = now;
+  if (typed === expected){
+    record(expected, true, (!skipLat && dt < 2500) ? dt : null);   // زمن الاستجابة بين ضغطتين صحيحتين
+    skipLat = false; cor++;
+    spans[idx].classList.remove('c'); spans[idx].classList.add('d');
+    idx++; markNext();
+    if (idx >= chars.length) finishExercise(now);
+  } else {
+    record(expected, false); wr++; skipLat = true;
+    flash(el, 'bad'); flash(spans[idx], 'x');
+    spans[idx].classList.add('x'); setTimeout(() => spans[idx] && spans[idx].classList.remove('x'), 200);
+  }
+  save(); updateStats(); updateHeat();
+});
+document.addEventListener('keyup', e => {
+  const el = keyEls[e.code]; if (!el) return;
+  el.classList.remove('down');
+  if (e.code === 'Space') e.preventDefault();       // لمنع تفعيل الأزرار بالمسافة
+});
+window.addEventListener('blur', () => Object.values(keyEls).forEach(el => el.classList.remove('down')));
+
+function finishExercise(now){
+  const mins = Math.max((now - exStart)/60000, 0.001);
+  S.hist.push({t:Date.now(), wpm:Math.round((chars.length/5)/mins), stage:S.stage});
+  if (S.hist.length > 200) S.hist.shift();
+  save(); renderStages();
+  setTimeout(newExercise, 500);
+}
+
+/* ---------- 9) الأزرار والتشغيل ---------- */
+document.getElementById('btnNew').onclick = e => { newExercise(); e.target.blur(); };
+document.getElementById('btnReset').onclick = e => {
+  e.target.blur();
+  if (confirm('سيتم مسح كل إحصاءاتك المحفوظة في هذا المتصفح. متابعة؟')){
+    S = {chars:{}, stage:0, hist:[]}; save(); resetSession(); renderStages(); newExercise();
+  }
+};
+buildKeyboard(); renderStages(); newExercise(); updateStats();
+</script>
+</body>
+</html>
