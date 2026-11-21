@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>مدرّب الطباعة العربي (Mac)</title>
+<title>مدرّب الطباعة (Mac)</title>
 <!-- ============ CSS ============ -->
 <style>
 :root{--bg:#efeee9;--fg:#1c1b19;--mut:#7a776f;--card:#fbfaf7;--key:#f4f3ef;--line:#cfccc3;--acc:#1f5fd6;--ok:#1a8f48;--bad:#d4382c;--hl:80%;color-scheme:light}
@@ -22,7 +22,7 @@ button small{display:block;font-size:.7rem;opacity:.8}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 16px;min-width:110px}
 .stat b{font-size:1.6rem;display:block;font-variant-numeric:tabular-nums}
 .stat span{color:var(--mut);font-size:.8rem}
-#text{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;font-size:2.1rem;line-height:2.1;min-height:120px;direction:rtl;unicode-bidi:plaintext;text-align:right}
+#text{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;font-size:2.1rem;line-height:2.1;min-height:120px;unicode-bidi:plaintext;text-align:start}
 #text .c{color:var(--mut)}
 #text .d{color:var(--ok)}
 #text .x{color:var(--bad)}
@@ -32,6 +32,7 @@ button small{display:block;font-size:.7rem;opacity:.8}
 #caret{position:absolute;width:2.5px;border-radius:2px;background:var(--acc);pointer-events:none;display:none;animation:caretBlink 1s steps(1) infinite}
 @keyframes caretBlink{50%{opacity:0}}
 @media(prefers-reduced-motion:reduce){#caret{animation:none}}
+body.en #text{font-family:Menlo,"SF Mono",Consolas,monospace;letter-spacing:.04em}
 #hint{color:var(--mut);min-height:1.5em}
 .kbwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
 #kb{direction:ltr;display:flex;flex-direction:column;gap:5px}
@@ -61,8 +62,8 @@ h2{font-size:1rem;margin:4px 0}
 <body>
 <main>
   <header>
-    <h1>مدرّب الطباعة العربي — تخطيط Mac</h1>
-    <div style="display:flex;gap:8px"><button id="btnNew">تمرين جديد (Esc)</button><button id="btnReset">مسح بياناتي</button></div>
+    <h1 id="title">مدرّب الطباعة العربي — تخطيط Mac</h1>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="stages" id="langs"></div><button id="btnNew">تمرين جديد (Esc)</button><button id="btnReset">مسح بيانات هذه اللغة</button></div>
   </header>
   <div class="stages" id="stages"></div>
   <div class="stats">
@@ -90,13 +91,17 @@ h2{font-size:1rem;margin:4px 0}
 <script>
 "use strict";
 
-/* ---------- 1) تخطيط Apple Arabic (Mac) كما في الصورة ----------
+/* ---------- 1) التخطيطات (عربي Mac + إنجليزي US Mac) ----------
    كل مفتاح: c = KeyboardEvent.code ، n = بدون Shift ، s = مع Shift ، f = الإصبع ، w = العرض النسبي
-   (إن وجدت اختلافاً في مفتاح ما عدّله هنا فقط؛ كل شيء آخر يُبنى من هذا الجدول) */
+   لإضافة لغة جديدة: أضف تخطيطاً + مراحل داخل LANGS وسيظهر زرها تلقائياً. */
 const D = {fa:'\u064E', fat:'\u064B', ka:'\u0650', kat:'\u064D', da:'\u064F', dat:'\u064C', su:'\u0652', sh:'\u0651'};
 const k  = (c,n,s,f,w=1) => ({c,n,s,f,w});
 const sp = (c,lab,w,f='') => ({c,lab,w,f});
-const ROWS = [
+const lk = (c,ch,f) => k(c, ch, ch.toUpperCase(), f);
+const ROW4 = () => [sp('ControlLeft','control',1.8),sp('AltLeft','option',1.6),k('Space',' ','','TH',7.9),
+                    sp('AltRight','option',1.6),sp('MetaRight','',2)];
+
+const AR_ROWS = [
   [k('Backquote','-','','LP'),k('Digit1','١','!','LP'),k('Digit2','٢','٭','LR'),k('Digit3','٣','#','LM'),
    k('Digit4','٤','$','LI'),k('Digit5','٥','٪','LI'),k('Digit6','٦','^','RI'),k('Digit7','٧','&','RI'),
    k('Digit8','٨','*','RM'),k('Digit9','٩',')','RR'),k('Digit0','٠','(','RP'),k('Minus','-','-','RP'),
@@ -112,46 +117,94 @@ const ROWS = [
   [sp('ShiftLeft','shift',2.4,'LP'),k('KeyZ','ظ',"'",'LP'),k('KeyX','ط','','LR'),k('KeyC','ذ','ئ','LM'),
    k('KeyV','د','ء','LI'),k('KeyB','ز','أ','LI'),k('KeyN','ر','إ','RI'),k('KeyM','و','ؤ','RI'),
    k('Comma','،','>','RM'),k('Period','.','<','RR'),k('Slash','/','؟','RP'),sp('ShiftRight','shift',2.5,'RP')],
-  [sp('ControlLeft','control',1.8),sp('AltLeft','option',1.6),k('Space',' ','','TH',7.9),
-   sp('AltRight','option',1.6),sp('MetaRight','',2)]
+  ROW4()
+];
+const EN_ROWS = [
+  [k('Backquote','`','~','LP'),k('Digit1','1','!','LP'),k('Digit2','2','@','LR'),k('Digit3','3','#','LM'),
+   k('Digit4','4','$','LI'),k('Digit5','5','%','LI'),k('Digit6','6','^','RI'),k('Digit7','7','&','RI'),
+   k('Digit8','8','*','RM'),k('Digit9','9','(','RR'),k('Digit0','0',')','RP'),k('Minus','-','_','RP'),
+   k('Equal','=','+','RP'),sp('Backspace','delete',1.9,'RP')],
+  [sp('Tab','tab',1.6,'LP'),lk('KeyQ','q','LP'),lk('KeyW','w','LR'),lk('KeyE','e','LM'),lk('KeyR','r','LI'),
+   lk('KeyT','t','LI'),lk('KeyY','y','RI'),lk('KeyU','u','RI'),lk('KeyI','i','RM'),lk('KeyO','o','RR'),
+   lk('KeyP','p','RP'),k('BracketLeft','[','{','RP'),k('BracketRight',']','}','RP'),k('Backslash','\\','|','RP',1.3)],
+  [sp('CapsLock','caps lock',1.9,'LP'),lk('KeyA','a','LP'),lk('KeyS','s','LR'),lk('KeyD','d','LM'),
+   lk('KeyF','f','LI'),lk('KeyG','g','LI'),lk('KeyH','h','RI'),lk('KeyJ','j','RI'),lk('KeyK','k','RM'),
+   lk('KeyL','l','RR'),k('Semicolon',';',':','RP'),k('Quote',"'",'"','RP'),sp('Enter','return',2,'RP')],
+  [sp('ShiftLeft','shift',2.4,'LP'),lk('KeyZ','z','LP'),lk('KeyX','x','LR'),lk('KeyC','c','LM'),
+   lk('KeyV','v','LI'),lk('KeyB','b','LI'),lk('KeyN','n','RI'),lk('KeyM','m','RI'),
+   k('Comma',',','<','RM'),k('Period','.','>','RR'),k('Slash','/','?','RP'),sp('ShiftRight','shift',2.5,'RP')],
+  ROW4()
 ];
 const FINGER = {LP:['خنصر اليسرى','#e5484d'],LR:['بنصر اليسرى','#f5a524'],LM:['وسطى اليسرى','#d4c21a'],
   LI:['سبابة اليسرى','#3fb950'],TH:['الإبهام','#8b949e'],RI:['سبابة اليمنى','#2aa7c9'],
   RM:['وسطى اليمنى','#4c7bf0'],RR:['بنصر اليمنى','#8a5cf0'],RP:['خنصر اليمنى','#d946a8']};
 
-/* جداول البحث: الحرف -> المفتاح ، والمفتاح -> الحرفان */
-const charMap = {}, codeMap = {}, keyDef = {}, keyEls = {};
-ROWS.flat().forEach(key => {
-  keyDef[key.c] = key;
-  if (key.n === undefined) return;
-  codeMap[key.c] = [key.n, key.s];
-  if (key.n && !charMap[key.n]) charMap[key.n] = {c:key.c, shift:false};
-  if (key.s && !charMap[key.s]) charMap[key.s] = {c:key.c, shift:true};
-});
 const MARK_RE = /[\u064B-\u0652]/;
 const disp = ch => MARK_RE.test(ch) ? '\u25CC' + ch : (ch === ' ' ? 'مسافة' : ch);
 
-/* ---------- 2) المراحل ---------- */
+/* ---------- 2) المراحل ----------
+   L: حروف التركيز ، U: حروف كبيرة ، N: أرقام ، M: تشكيل ، P: ترقيم ، C: حروف سياق (وزنها أخف) */
 const A = s => Array.from(s);
 const LET = A('شسيبلاتنمكضصثقفغعهخحجةظطذدزروأإآؤئءى');
 const MARKS = Object.values(D);
 const PUNCT = A('،؛؟.«»');
-const STAGES = [
-  {name:'صف الارتكاز',       L:A('شسيبلاتنمك'), C:[], M:[], P:[]},
-  {name:'الصف العلوي',       L:A('ضصثقفغعهخحجة'), C:A('شسيبلاتنمك'), M:[], P:[]},
-  {name:'الصف السفلي',       L:A('ظطذدزرو'), C:A('شسيبلاتنمكضصثقفغعهخحجة'), M:[], P:[]},
-  {name:'الهمزات والمتشابهة', L:A('أإآؤئءى'), C:A('ايهةو'), M:[], P:[]},
-  {name:'التشكيل والترقيم',  L:[], C:LET, M:MARKS, P:PUNCT},
-  {name:'الوضع التكيفي',     L:LET, C:[], M:MARKS, P:PUNCT}
-];
-const focusOf = st => [...st.L, ...st.M, ...st.P];
-const TRACKED = new Set([...LET, ...MARKS, ...PUNCT]);
+const LOW = A('abcdefghijklmnopqrstuvwxyz'), UP = A('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), DIG = A('0123456789');
+const EPUNCT = A(",.;:'\"-!?()");
+const st = (name, o) => Object.assign({name, L:[], U:[], N:[], C:[], M:[], P:[]}, o);
+const LANGS = {
+  ar: {name:'العربية', title:'مدرّب الطباعة العربي — تخطيط Mac', dir:'rtl', key:'ar_mac_typing_v1', rows:AR_ROWS, stages:[
+    st('صف الارتكاز',         {L:A('شسيبلاتنمك')}),
+    st('الصف العلوي',         {L:A('ضصثقفغعهخحجة'), C:A('شسيبلاتنمك')}),
+    st('الصف السفلي',         {L:A('ظطذدزرو'), C:A('شسيبلاتنمكضصثقفغعهخحجة')}),
+    st('الهمزات والمتشابهة',   {L:A('أإآؤئءى'), C:A('ايهةو')}),
+    st('التشكيل والترقيم',    {C:LET, M:MARKS, P:PUNCT}),
+    st('الوضع التكيفي',       {L:LET, M:MARKS, P:PUNCT})]},
+  en: {name:'English', title:'مدرّب الطباعة الإنجليزي — تخطيط Mac', dir:'ltr', key:'en_mac_typing_v1', rows:EN_ROWS, stages:[
+    st('Home row',             {L:A('asdfghjkl;')}),
+    st('Top row',              {L:A('qwertyuiop'), C:A('asdfghjkl')}),
+    st('Bottom row',           {L:A('zxcvbnm'), C:A('asdfghjklqwertyuiop')}),
+    st('Capitals (Shift)',     {U:UP, C:LOW}),
+    st('Numbers & punctuation', {N:DIG, P:EPUNCT, C:LOW}),
+    st('Adaptive',             {L:LOW, U:UP, N:DIG, P:EPUNCT})]}
+};
+const focusOf = s => [...s.L, ...s.U, ...s.N, ...s.M, ...s.P];
 
-/* ---------- 3) التخزين المحلي ---------- */
-const KEY = 'ar_mac_typing_v1';
-let S = {chars:{}, stage:0, hist:[]};
-try { const r = localStorage.getItem(KEY); if (r) S = Object.assign(S, JSON.parse(r)); } catch(e){}
+/* ---------- 3) حالة اللغة الحالية + التخزين المحلي (مفتاح مستقل لكل لغة) ---------- */
+let LANG, ROWS, STAGES, TRACKED, KEY, S, charMap, codeMap, keyDef, keyEls = {};
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} };
+function setLang(l){
+  if (!LANGS[l]) l = 'ar';
+  LANG = l; const L = LANGS[l];
+  ROWS = L.rows; STAGES = L.stages; KEY = L.key;
+  TRACKED = new Set(STAGES.flatMap(s => [...focusOf(s), ...s.C]));
+  charMap = {}; codeMap = {}; keyDef = {}; keyEls = {};
+  ROWS.flat().forEach(key => {
+    keyDef[key.c] = key;
+    if (key.n === undefined) return;
+    codeMap[key.c] = [key.n, key.s];
+    if (key.n && !charMap[key.n]) charMap[key.n] = {c:key.c, shift:false};
+    if (key.s && !charMap[key.s]) charMap[key.s] = {c:key.c, shift:true};
+  });
+  S = {chars:{}, stage:0, hist:[]};
+  try { const r = localStorage.getItem(KEY); if (r) S = Object.assign(S, JSON.parse(r)); localStorage.setItem('typing_lang', l); } catch(e){}
+  if (!STAGES[S.stage]) S.stage = 0;
+  document.body.className = l;
+  document.getElementById('title').textContent = L.title;
+  document.getElementById('text').dir = L.dir;
+  document.getElementById('text').style.textAlign = L.dir === 'ltr' ? 'left' : 'right';
+}
+function switchLang(l){
+  if (LANG) save();
+  setLang(l); buildKeyboard(); renderLangs(); renderStages(); resetSession(); newExercise();
+}
+function renderLangs(){
+  const box = document.getElementById('langs'); box.innerHTML = '';
+  Object.keys(LANGS).forEach(l => {
+    const b = document.createElement('button'); b.textContent = LANGS[l].name; b.className = l === LANG ? 'on' : '';
+    b.onclick = () => { switchLang(l); b.blur(); };
+    box.appendChild(b);
+  });
+}
 
 /* ---------- 4) إحصاءات الحروف والأوزان ----------
    n: المحاولات ، e: الأخطاء ، nl: قياسات الزمن ، lat: متوسط الزمن
@@ -230,31 +283,41 @@ function pick(items, avoid){
   return list[list.length-1][0];
 }
 function makeExercise(){
-  const st = STAGES[S.stage];
-  const letters = [...st.L.map(c => [c, weight(c)]), ...st.C.map(c => [c, weight(c)*0.25])];
-  const marks = st.M.map(c => [c, weight(c)]);
-  const puncts = st.P.map(c => [c, weight(c)]);
+  const cur = STAGES[S.stage], W = c => [c, weight(c)];
+  const letters = [...cur.L.map(W), ...cur.C.map(c => [c, weight(c)*0.25])];
+  const upper = cur.U.map(W), digits = cur.N.map(W), marks = cur.M.map(W), puncts = cur.P.map(W);
   const words = []; let len = 0;
   while (len < 34){
-    const wl = 2 + rnd(3), w = []; let prev = null;
-    for (let i = 0; i < wl; i++){ const ch = pick(letters, prev); w.push(ch); prev = ch; }
+    const w = []; let prev = null;
+    if (digits.length && Math.random() < 0.35){
+      for (let i = 0, n = 2 + rnd(3); i < n; i++){ const ch = pick(digits, prev); w.push(ch); prev = ch; }
+    } else {
+      for (let i = 0, n = 2 + rnd(3); i < n; i++){
+        const ch = (i === 0 && upper.length && Math.random() < 0.6) ? pick(upper) : pick(letters, prev);
+        w.push(ch); prev = ch;
+      }
+    }
     if (marks.length && Math.random() < 0.55) w.splice(1 + rnd(w.length), 0, pick(marks));
     if (puncts.length && Math.random() < 0.3) w.push(pick(puncts));
-    words.push(w.join('')); len += Array.from(w.join('')).length + 1;
+    const word = w.join(''); words.push(word); len += Array.from(word).length + 1;
   }
   return words.join(' ');
 }
 
 /* ---------- 6) واجهة المفاتيح والخريطة الحرارية ---------- */
 function buildKeyboard(){
-  const kb = document.getElementById('kb');
+  const kb = document.getElementById('kb'); kb.innerHTML = '';
   ROWS.forEach(row => {
     const r = document.createElement('div'); r.className = 'row';
     row.forEach(key => {
       const el = document.createElement('div'); el.className = 'key'; el.style.setProperty('--w', key.w);
       if (key.f) el.style.setProperty('--fc', FINGER[key.f][1]);
       if (key.n === undefined || key.c === 'Space'){ el.classList.add('lab'); el.textContent = key.lab || (key.c === 'Space' ? 'space' : ''); }
-      else el.innerHTML = '<div class="s">' + (key.s ? disp(key.s) : '') + '</div><div class="n">' + key.n + '</div>';
+      else {
+        const one = key.n.toUpperCase() === key.s && key.s !== key.n;
+        el.innerHTML = one ? '<div class="s"></div><div class="n">' + key.s + '</div>'
+                           : '<div class="s">' + (key.s ? disp(key.s) : '') + '</div><div class="n">' + key.n + '</div>';
+      }
       r.appendChild(el); keyEls[key.c] = el;
     });
     kb.appendChild(r);
@@ -274,9 +337,9 @@ function updateHeat(){
 }
 function renderStages(){
   const box = document.getElementById('stages'); box.innerHTML = '';
-  STAGES.forEach((st, i) => {
+  STAGES.forEach((s, i) => {
     const b = document.createElement('button'); b.className = i === S.stage ? 'on' : '';
-    b.innerHTML = (i+1) + '. ' + st.name + '<small>إتقان ' + stageProgress(i) + '%</small>';
+    b.innerHTML = (i+1) + '. ' + s.name + '<small>إتقان ' + stageProgress(i) + '%</small>';
     b.onclick = () => { S.stage = i; save(); resetSession(); renderStages(); newExercise(); b.blur(); };
     box.appendChild(b);
   });
@@ -397,11 +460,12 @@ function finishExercise(now){
 document.getElementById('btnNew').onclick = e => { newExercise(); e.target.blur(); };
 document.getElementById('btnReset').onclick = e => {
   e.target.blur();
-  if (confirm('سيتم مسح كل إحصاءاتك المحفوظة في هذا المتصفح. متابعة؟')){
+  if (confirm('سيتم مسح إحصاءات اللغة الحالية فقط. متابعة؟')){
     S = {chars:{}, stage:0, hist:[]}; save(); resetSession(); renderStages(); newExercise();
   }
 };
-buildKeyboard(); renderStages(); newExercise(); updateStats();
+let first = 'ar'; try { first = localStorage.getItem('typing_lang') || 'ar'; } catch(e){}
+switchLang(first);
 </script>
 </body>
 </html>
